@@ -15,6 +15,7 @@ class BuysellStock extends PolymerElement{
     ready(){
         
         super.ready();
+        this.isVisible = true;
         
     }
     static get properties(){
@@ -65,7 +66,7 @@ class BuysellStock extends PolymerElement{
         //this.responseData = res;
     }
     getStockDetails(event){
-        //cons
+        this.isActive = true;
         console.log(event.target.selectedItem.textContent);
         ////console.log("on change triggering"); 
         if(this.$.stockselection.validate()){
@@ -85,11 +86,16 @@ class BuysellStock extends PolymerElement{
     handleResponse(event, requestType ){
         switch(this.requestType){
             case 'getStock':
+                this.isActive = false;
+                this.isVisible = false;
                 this.userName = this.selectedUser;
                 this.stockName = event.detail.response['Global Quote']['01. symbol'];
                 this.unitPrice = event.detail.response['Global Quote']['05. price'];
                 break;
             case 'buyStock':
+                this.toastMessage = "This transaction is successful"
+                this.$.messageHandle.toggle();
+
                console.log("response message",event.response.message);
                 
                 break;    
@@ -97,6 +103,10 @@ class BuysellStock extends PolymerElement{
        
        //this.set('responseData', event.detail.response['Global Quote']);
        
+    }
+    handleError(event){
+        this.$.messageHandle.toggle();
+        this.toastMessage = "Failed to make transaction";
     }
     buyStock(event){
         
@@ -128,6 +138,7 @@ class BuysellStock extends PolymerElement{
             ${sharedStyles}
             <h2>[[pageTitle]]</h2>
             <!--<paper-toast id="messageHandle" text="[[toastMessage]]" horizontal-align="center" vertical-align="middle"></paper-toast>-->
+            <paper-toast id="messageHandle" text="[[toastMessage]]" horizontal-align="center" vertical-align="middle"></paper-toast>
             <iron-form id="stockselection" class="col-md-4 offset-md-4 border border-secondary pt-3 pb-3">
                 <form>
                     <paper-dropdown-menu label="Users" name="selectUser">
@@ -144,9 +155,9 @@ class BuysellStock extends PolymerElement{
                             </template>
                         </paper-listbox>
                     </paper-dropdown-menu>
-                    
-                    <div>Qty: {{unitPrice}}</div>
-                    <paper-input label="Qty" value="{{qty}}"></paper-input>
+                    <paper-spinner active={{isActive}}></paper-spinner><br/>
+                    <div hidden$=[[isVisible]]>Stock Price: {{unitPrice}}</div><br/>
+                    <paper-input label="Qty" hidden$=[[isVisible]] value="{{qty}}"></paper-input>
                     <paper-button label="Submit" required raised on-click="buyStock">Submit</paper-input>
                    
                 </form>
