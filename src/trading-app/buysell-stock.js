@@ -6,6 +6,7 @@ import '@polymer/paper-dropdown-menu/paper-dropdown-menu.js';
 import '@polymer/paper-item/paper-item.js';
 import '@polymer/paper-listbox/paper-listbox.js';
 import '@polymer/paper-toast/paper-toast.js';
+import '@polymer/paper-input/paper-input.js';
 import { sharedStyles } from './shared-styles.js';
 class BuysellStock extends PolymerElement{
     constructor(){
@@ -14,12 +15,7 @@ class BuysellStock extends PolymerElement{
     ready(){
         
         super.ready();
-        let ticketCreateajax = this.$.ajax;
-           ticketCreateajax.method = "get";
-           ticketCreateajax.contentType = "application/json";
-           ticketCreateajax.url = "http://10.117.189.53:8081/bank/breach/getFranchise";
-           this.requestType = 'franchise';
-           ticketCreateajax.generateRequest(); 
+        
     }
     static get properties(){
         return {
@@ -28,65 +24,131 @@ class BuysellStock extends PolymerElement{
                 value: "This is for Buying/Selling page"
             },
             
-            businessCategory:{
+            users:{
                 type: Array,
-                value: ["Customer Experience", "Risk", "Finance", "Payments"]
+                value: ["user1", "user2", "user3"]
             },
-            breachCategory:{
+            stockCompanies:{
                 type: Array,
-                value: ["Loss of device/physical files", "PIN/Card Issues", "Loss of device/physical files"]
+                value: ["HCL", "TCS", "ING"]
+            },
+            responseData: {
+                type: Object,                
+                observer: '_getFormattedArray'
+                
+            },
+            res: {
+                type: Array,
+                value: []
             }
-        }
-    }
-    createTicket(event){
-        if(this.$.ticketCreate.validate()){
             
-           //console.log(this.selectedCategory, this.amount, this.description, this.selectedDate, this.selectedType);
-           let ticketCreateajax = this.$.ajax;
-           ticketCreateajax.method = "POST";
-           ticketCreateajax.contentType = "application/json";
-           
-           ticketCreateajax.url = "http://10.117.189.53:8081/bank/breach/getBusiness";
-           ticketCreateajax.body = {"name": this.selectedFranchise}; 
-           this.requestType = 'business';
-           ticketCreateajax.generateRequest(); 
         }
     }
-    handleResponse(event,requestType ){
-        console.log(event.detail.response);
-        console.log(event.detail.response.details);
-        this.franchiseCategory = event.detail.response.details;
+    _getFormattedArray( newValue){
+        console.log("changed key values", newValue);
+        let data = Object.keys(newValue);
+        var obj = {};
+        for(let i=0; i< data.length; i++){
+            //this.set('obj.name', i);
+            this.set('obj', newValue[data[i]]);
+            obj[i] = newValue[data[i]];
+            
+           // obj = {key: data[i],value: newValue[data[i]]};
+           //console.log(newValue[data[i]])
+           //this.set('obj.'+i,  newValue[data[i]]);
+            
+        }
+        //res.push(obj);
+        console.log(obj)
+        this.push('res', obj);
+        //console.log(this.res)
+        //this.responseData = res;
+    }
+    getStockDetails(event){
+        //cons
+        console.log(event.target.selectedItem.textContent);
+        ////console.log("on change triggering"); 
+        if(this.$.stockselection.validate()){
+           //console.log("on change triggering 2"); 
+           //console.log("selected stock", event.target.selectedItem.textContent);
+           //console.log(this.selectedCategory, this.amount, this.description, this.selectedDate, this.selectedType);
+           let stockselectionajax = this.$.ajax;
+           //stockselectionajax.method = "POST";
+           stockselectionajax.contentType = "application/json";
+           
+           stockselectionajax.url = "https://www.alphavantage.co/query?function=GLOBAL_QUOTE&symbol="+ event.target.selectedItem.textContent +"&apikey=AEKVPK1QUWETJHLM";
+           //ticketCreateajax.body = {"name": this.selectedFranchise}; 
+           this.requestType = 'getStock';
+           stockselectionajax.generateRequest(); 
+        }
+    }
+    handleResponse(event, requestType ){
+        switch(this.requestType){
+            case 'getStock':
+                this.userName = this.selectedUser;
+                this.stockName = event.detail.response['Global Quote']['01. symbol'];
+                this.unitPrice = event.detail.response['Global Quote']['05. price'];
+                break;
+            case 'buyStock':
+               console.log("response message",event.response.message);
+                
+                break;    
+        }
+       
+       //this.set('responseData', event.detail.response['Global Quote']);
+       
+    }
+    buyStock(event){
+        
+        if(this.$.stockselection.validate()){
+            this.TotalPrice = (this.unitPrice * this.qty); 
+            let buyStockajax = this.$.ajax;
+            buyStockajax.method = "POST";
+           buyStockajax.contentType = "application/json";
+           buyStockajax.url = "http://10.117.189.29:8080/rmisecurity/tradestock";
+           buyStockajax.body = 
+           {
+               "userName": this.userName,
+               "stockName": this.stockName,
+               "qty": this.qty,
+               "type": "cr",
+               "unitPrice": this.unitPrice,
+               "TotalPrice": this.TotalPrice
+           }
+            this.requestType = 'buyStock';
+            buyStockajax.generateRequest();
+         }
+    }
+    _getData(item) {
+            console.log("inside", item);
+            return 1;
     }
     static get template(){
         return html `
             ${sharedStyles}
             <h2>[[pageTitle]]</h2>
             <!--<paper-toast id="messageHandle" text="[[toastMessage]]" horizontal-align="center" vertical-align="middle"></paper-toast>-->
-            <iron-form id="ticketCreate" class="col-md-4 offset-md-4 border border-secondary pt-3 pb-3">
-                
+            <iron-form id="stockselection" class="col-md-4 offset-md-4 border border-secondary pt-3 pb-3">
                 <form>
-                    <paper-dropdown-menu label="Franchise" name="selectFranchise">
-                        <paper-listbox slot="dropdown-content" selected="{{selectedFranchise}}" attr-for-selected="name" selected-attribute="visible">
-                            <template is="dom-repeat" items="[[franchiseCategory]]">
+                    <paper-dropdown-menu label="Users" name="selectUser">
+                        <paper-listbox slot="dropdown-content" selected="{{selectedUser}}" attr-for-selected="name" selected-attribute="visible">
+                            <template is="dom-repeat" items="[[users]]">
                                 <paper-item name={{item}}>{{item}}</paper-item>
                             </template>
                         </paper-listbox>
                     </paper-dropdown-menu>
-                    <paper-dropdown-menu label="Business Area" name="selectBusiness">
-                        <paper-listbox slot="dropdown-content" selected="{{selectedBusiness}}" attr-for-selected="name" selected-attribute="visible">
-                            <template is="dom-repeat" items="[[businessCategory]]">
+                    <paper-dropdown-menu  id="paper-listbox" label="Stock Companies" name="selectStock"  on-iron-select="getStockDetails">
+                        <paper-listbox slot="dropdown-content"  selected="{{selectedStock}}" attr-for-selected="name" selected-attribute="visible">
+                            <template is="dom-repeat" items="[[stockCompanies]]">
                                 <paper-item name={{item}}>{{item}}</paper-item>
                             </template>
                         </paper-listbox>
                     </paper-dropdown-menu>
-                    <paper-dropdown-menu label="Breach Category" name="selectBreach">
-                        <paper-listbox slot="dropdown-content" selected="{{selectedBreach}}" attr-for-selected="name" selected-attribute="visible">
-                            <template is="dom-repeat" items="[[breachCategory]]">
-                                <paper-item name={{item}}>{{item}}</paper-item>
-                            </template>
-                        </paper-listbox>
-                    </paper-dropdown-menu><br/>
-                    <paper-button label="Submit" required raised on-click="createTicket">Submit</paper-input>
+                    
+                    <div>Qty: {{unitPrice}}</div>
+                    <paper-input label="Qty" value="{{qty}}"></paper-input>
+                    <paper-button label="Submit" required raised on-click="buyStock">Submit</paper-input>
+                   
                 </form>
             </iron-form>
             <iron-ajax
@@ -96,6 +158,8 @@ class BuysellStock extends PolymerElement{
                 on-error="handleError"
                 debounce-duration="300">
             </iron-ajax>
+            
+            
         `
     }
 
