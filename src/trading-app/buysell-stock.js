@@ -115,7 +115,7 @@ class BuysellStock extends PolymerElement{
             let buyStockajax = this.$.ajax;
             buyStockajax.method = "POST";
            buyStockajax.contentType = "application/json";
-           buyStockajax.url = "http://13.234.20.255:8090/rmisecurity/tradestock";
+           buyStockajax.url = "http://13.234.20.255:9080/rmisecurity/tradestock";
            buyStockajax.body = 
            {
                "userName": this.userName,
